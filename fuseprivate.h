@@ -27,7 +27,10 @@
 
 #include "squashfuse.h"
 
-#include <fuse.h>
+#include "squashfuse_dlopen.h"
+#ifndef ENABLE_DLOPEN
+#	include <fuse.h>
+#endif
 
 #include <sys/stat.h>
 

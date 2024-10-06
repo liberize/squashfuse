@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+int have_libloaded = 0;
 
 typedef struct sqfs_hl sqfs_hl;
 struct sqfs_hl {
@@ -42,9 +43,10 @@ struct sqfs_hl {
 
 static sqfs_err sqfs_hl_lookup(sqfs **fs, sqfs_inode *inode,
 		const char *path) {
+	LOAD_SYMBOL(struct fuse_context *,fuse_get_context,(void));
 	bool found;
 	
-	sqfs_hl *hl = fuse_get_context()->private_data;
+	sqfs_hl *hl = DL(fuse_get_context)()->private_data;
 	*fs = &hl->fs;
 	if (inode)
 		*inode = hl->root; /* copy */
@@ -67,7 +69,8 @@ static void sqfs_hl_op_destroy(void *user_data) {
 }
 
 static void *sqfs_hl_op_init(struct fuse_conn_info *conn) {
-	return fuse_get_context()->private_data;
+	LOAD_SYMBOL(struct fuse_context *,fuse_get_context,(void));
+	return DL(fuse_get_context)()->private_data;
 }
 
 static int sqfs_hl_op_getattr(const char *path, struct stat *st) {
@@ -264,7 +267,16 @@ static sqfs_hl *sqfs_hl_open(const char *path, size_t offset) {
 	return NULL;
 }
 
+#ifdef ENABLE_DLOPEN
+#define fuse_main(argc, argv, op, user_data) \
+	DL(fuse_main_real)(argc, argv, op, sizeof(*(op)), user_data)
+#endif
+
 int main(int argc, char *argv[]) {
+	LOAD_SYMBOL(int,fuse_opt_parse,(struct fuse_args *args, void *data, const struct fuse_opt opts[], fuse_opt_proc_t proc));
+	LOAD_SYMBOL(int,fuse_opt_add_arg,(struct fuse_args *args, const char *arg));
+	LOAD_SYMBOL(int,fuse_main_real,(int argc, char *argv[], const struct fuse_operations *op, size_t op_size, void *user_data));  /* fuse_main */
+	LOAD_SYMBOL(void,fuse_opt_free_args,(struct fuse_args *args));
 	struct fuse_args args;
 	sqfs_opts opts;
 	sqfs_hl *hl;
@@ -299,7 +311,7 @@ int main(int argc, char *argv[]) {
 	opts.image = NULL;
 	opts.mountpoint = 0;
 	opts.offset = 0;
-	if (fuse_opt_parse(&args, &opts, fuse_opts, sqfs_opt_proc) == -1)
+	if (DL(fuse_opt_parse)(&args, &opts, fuse_opts, sqfs_opt_proc) == -1)
 		sqfs_usage(argv[0], true);
 	if (!opts.image)
 		sqfs_usage(argv[0], true);
@@ -308,8 +320,9 @@ int main(int argc, char *argv[]) {
 	if (!hl)
 		return -1;
 	
-	fuse_opt_add_arg(&args, "-s"); /* single threaded */
+	DL(fuse_opt_add_arg)(&args, "-s"); /* single threaded */
 	ret = fuse_main(args.argc, args.argv, &sqfs_hl_ops, hl);
-	fuse_opt_free_args(&args);
+	DL(fuse_opt_free_args)(&args);
+	CLOSE_LIBRARY;
 	return ret;
 }

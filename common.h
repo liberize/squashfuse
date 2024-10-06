@@ -36,7 +36,7 @@
 #else
 	typedef mode_t sqfs_mode_t;
 	typedef uid_t sqfs_id_t;
-	typedef off_t sqfs_off_t;
+	typedef int64_t sqfs_off_t;
 	typedef int sqfs_fd_t;
 #endif
 

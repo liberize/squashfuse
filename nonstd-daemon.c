@@ -28,11 +28,16 @@
 #include "nonstd-internal.h"
 
 #include <unistd.h>
-#include <fuse_lowlevel.h>
+
+#include "squashfuse_dlopen.h"
+#ifndef ENABLE_DLOPEN
+#	include <fuse_lowlevel.h>
+#endif
 
 int sqfs_ll_daemonize(int fg) {
 	#if HAVE_DECL_FUSE_DAEMONIZE
-		return fuse_daemonize(fg);
+		LOAD_SYMBOL(int,fuse_daemonize,(int foreground));
+		return DL(fuse_daemonize)(fg);
 	#else
 		return daemon(0,0);
 	#endif

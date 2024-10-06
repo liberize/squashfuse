@@ -1,6 +1,7 @@
 COMPRESSION_LIBS = $(ZLIB_LIBS) $(XZ_LIBS) $(LZO_LIBS) $(LZ4_LIBS)
 
 ACLOCAL_AMFLAGS = -I m4 --install
+AM_CFLAGS = -fno-strict-aliasing -DENABLE_DLOPEN
 
 # Suppress AppleDouble
 if MAKE_EXPORT
@@ -14,17 +15,18 @@ bin_PROGRAMS =
 noinst_PROGRAMS =
 
 noinst_LTLIBRARIES = libsquashfuse.la
+noinst_LTLIBRARIES += libsquashfuse_ll.la
 
 # Main library: libsquashfuse
 libsquashfuse_la_SOURCES = swap.c cache.c table.c dir.c file.c fs.c \
 	decompress.c xattr.c hash.c stack.c traverse.c util.c \
-	nonstd-pread.c nonstd-stat.c \
+	nonstd-pread.c nonstd-stat.c squashfuse_dlopen.c \
 	squashfs_fs.h common.h nonstd-internal.h nonstd.h swap.h cache.h table.h \
 	dir.h file.h decompress.h xattr.h squashfuse.h hash.h stack.h traverse.h \
-	util.h fs.h
+	util.h fs.h squashfuse_dlopen.h
 libsquashfuse_la_CPPFLAGS = $(ZLIB_CPPFLAGS) $(XZ_CPPFLAGS) $(LZO_CPPFLAGS) \
 	$(LZ4_CPPFLAGS)
-libsquashfuse_la_LIBADD =
+libsquashfuse_la_LIBADD = -ldl
 
 # Helper for FUSE clients: libfuseprivate
 libfuseprivate_la_SOURCES = fuseprivate.c nonstd-makedev.c nonstd-enoattr.c \
@@ -46,10 +48,9 @@ endif
 
 # Low-level squashfuse_ll, if supported
 if SQ_WANT_LOWLEVEL
-bin_PROGRAMS += squashfuse_ll
-squashfuse_ll_SOURCES = ll.c ll_inode.c nonstd-daemon.c ll.h
-squashfuse_ll_CPPFLAGS = $(FUSE_CPPFLAGS)
-squashfuse_ll_LDADD = libsquashfuse.la libfuseprivate.la $(COMPRESSION_LIBS) \
+libsquashfuse_ll_la_SOURCES = ll.c ll_inode.c nonstd-daemon.c ll.h
+libsquashfuse_ll_la_CPPFLAGS = $(FUSE_CPPFLAGS)
+libsquashfuse_ll_la_LIBADD = libsquashfuse.la libfuseprivate.la $(COMPRESSION_LIBS) \
   $(FUSE_LIBS)
 
 noinst_LTLIBRARIES += libfuseprivate.la

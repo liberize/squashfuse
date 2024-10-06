@@ -27,7 +27,10 @@
 
 #include "squashfuse.h"
 
-#include <fuse_lowlevel.h>
+#include "squashfuse_dlopen.h"
+#ifndef ENABLE_DLOPEN
+#	include <fuse_lowlevel.h>
+#endif
 
 typedef struct sqfs_ll sqfs_ll;
 struct sqfs_ll {
