@@ -424,6 +424,7 @@ static sqfs_ll *sqfs_ll_open(const char *path, size_t offset) {
 }
 
 int fusefs_main(int argc, char *argv[], void (*mounted) (void)) {
+	LOAD_LIBRARY;
 	LOAD_SYMBOL(int,fuse_opt_parse,(struct fuse_args *args, void *data, const struct fuse_opt opts[], fuse_opt_proc_t proc));
 	LOAD_SYMBOL(int,fuse_parse_cmdline,(struct fuse_args *args, char **mountpoint, int *multithreaded, int *foreground));
 	LOAD_SYMBOL(struct fuse_session *,fuse_lowlevel_new,(struct fuse_args *args, const struct fuse_lowlevel_ops *op, size_t op_size, void *userdata));
